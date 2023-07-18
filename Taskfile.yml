@@ -1,0 +1,54 @@
+version: 3
+
+env:
+  ZSH_CFG_DIR: ~/.config/zsh
+
+tasks:
+  pretty:
+    desc: Uses the Prettier CLI tool to format the codebase.
+    aliases:
+      - p
+      - format
+      - fmt
+    cmds:
+      - prettier --write .
+
+  push:
+    desc: Push any git changes and tags to the remote repository.
+    aliases:
+      - gp
+    deps:
+      - build
+    cmds:
+      - git push
+      - git push --tags
+
+  setup:
+    desc: Create the symlinks for the various files in this directory.
+    aliases:
+      - init
+      - s
+    cmds:
+      - '[ ! -d "$ZSH_CFG_DIR" ] && mkdir "$ZSH_CFG_DIR"'
+
+      # Link the .zshrc file.
+      - ln -fs "$(pwd)/.zshrc" "~/.zshrc"
+
+      # Create symlinks for all the *.sh files in the scripts directory.
+      - cd scripts; for script in *.sh; do ln -fs "$(pwd)/$script" "$ZSH_CFG_DIR/$script"; done; cd ..
+
+  remove:
+    desc: Remove all the symlinks in the zsh config directory that were created by the setup task.
+    aliases:
+      - r
+      - clean
+    cmds:
+      - rm -rf "$ZSH_CFG_DIR/*sh"
+
+  output:
+    aliases:
+      - o
+    cmds:
+      # - '[ ! -d "$ZSH_CFG_DIR" ] && mkdir "$ZSH_CFG_DIR" && echo "Folder created successfully." || echo "Folder already exists."'
+      - '[ ! -d "$ZSH_CFG_DIR" ] && mkdir "$ZSH_CFG_DIR" || echo "Folder already exists, skipping."'
+      - echo $ZSH_CFG_DIR
