@@ -1,14 +1,17 @@
 # Terminal Customization
 
-This repository is home to a collection of configuration files, scripts, etc., for customizing my
-terminal environment.
+This repository is home to a collection of configuration files, scripts, etc., for customizing my terminal environment.
+
+## Architecture
+
+For a detailed overview of the architecture of this repository, please see the [Architecture.md](./Architecture.md) file.
 
 ## One-Line Installation
 
 If you're feeling brave (or lazy), you can run the following one-liner to install and apply my customizations and the necessary pre-requisites:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/4lch4/Term-Time/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | bash
 ```
 
 ## Pre-requisites
@@ -26,10 +29,10 @@ Once you have the pre-requisites installed, you can run the following commands t
 
 ```bash
 # Clone this repository to your local machine.
-git clone git@github.com:4lch4/Term-Time.git
+git clone git@github.com:4lch4/Dotfiles.git
 
 # Change into the cloned repository.
-cd Term-Time
+cd Dotfiles
 
 # Run the setup task to apply the customizations.
 task setup
