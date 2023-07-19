@@ -1,0 +1,28 @@
+name: Scans
+
+on:
+  # Run workflow automatically whenever a pull request is opened or updated.
+  pull_request:
+
+  # Run workflow automatically whenever a push is made to the repository.
+  push:
+
+  # Allows you to run this workflow manually from the Actions tab.
+  workflow_dispatch:
+
+  # Run every day at 4:20am UTC.
+  schedule:
+    - cron: "20 4 * * *"
+
+jobs:
+  scan:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
