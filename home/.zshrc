@@ -1,63 +1,46 @@
-export ZSH="$HOME/.oh-my-zsh"
+# ~/.zshrc, managed by https://github.com/4lch4/Dotfiles.
+# This file is a symlink into the repo, so edit it there. Machine-specific
+# settings go in ~/.config/zsh/local.zsh, which isn't tracked.
+
 export ZSH_CFG_DIR="$HOME/.config/zsh"
 
-source $ZSH_CFG_DIR/antigen.zsh
+# Helpers used here and by the plugin list.
+has() { (( $+commands[$1] )) }
+is-macos() { [[ "$OSTYPE" == darwin* ]] }
 
+# Environment first, so plugins can see PATH, NVM_DIR, etc.
+source "$ZSH_CFG_DIR/vars.zsh"
+
+# oh-my-zsh settings; must be set before its library is loaded.
 HIST_STAMPS="yyyy-mm-dd"
 
-antigen use oh-my-zsh
+# Plugins (see ~/.zsh_plugins.txt).
+source "${ZDOTDIR:-$HOME}/.antidote/antidote.zsh"
+antidote load
 
-antigen theme steeef
+# fzf key bindings/completion. Newer fzf (0.48+) generates them itself; older
+# Ubuntu packages ship them as files, which minimal images may have stripped.
+if has fzf; then
+  if fzf --zsh >/dev/null 2>&1; then
+    source <(fzf --zsh)
+  else
+    for f in ~/.fzf.zsh /usr/share/doc/fzf/examples/{key-bindings,completion}.zsh; do
+      [[ -f "$f" ]] && source "$f"
+    done
+    unset f
+  fi
+fi
+has zoxide && eval "$(zoxide init zsh)"
+has doppler && source <(doppler completion 2>/dev/null)
 
-antigen bundle git
-antigen bundle command-not-found
-antigen bundle zsh-users/zsh-syntax-highlighting
-antigen bundle zsh-users/zsh-autosuggestions
-antigen bundle zsh-users/zsh-completions
-antigen bundle docker
-antigen bundle docker-compose
-antigen bundle doctl
-antigen bundle dotenv
-antigen bundle colorize
-antigen bundle common-aliases
-antigen bundle fzf
-antigen bundle gh
-antigen bundle git
-antigen bundle httpie
-antigen bundle kubectl
-antigen bundle nvm
-antigen bundle npm
-antigen bundle rust
-antigen bundle rsync
-antigen bundle sudo
-antigen bundle terraform
-antigen bundle tmux
-antigen bundle urltools
-antigen bundle vscode
-antigen bundle brew
-antigen bundle extract
+# My customizations go last so nothing above overrides them.
+source "$ZSH_CFG_DIR/functions.zsh"
+source "$ZSH_CFG_DIR/aliases.zsh"
 
-antigen apply
+# Per-machine overrides. Loaded before secrets so it can set DOTFILES_SKIP_SECRETS.
+[[ -f "$ZSH_CFG_DIR/local.zsh" ]] && source "$ZSH_CFG_DIR/local.zsh"
 
-# Add doppler autocomplete.
-source <(doppler completion 2> /dev/null)
+source "$ZSH_CFG_DIR/secrets.zsh"
 
-# pnpm
-export PNPM_HOME="~/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-eval "$(zoxide init zsh)"
-autoload -U compinit; compinit
-
-# Apply my customizations after everything to ensure they are not overwritten.
-source $ZSH_CFG_DIR/functions.sh
-source $ZSH_CFG_DIR/aliases.sh
-source $ZSH_CFG_DIR/vars.sh
-source $ZSH_CFG_DIR/secrets.sh
-
+# Don't let a missing optional file above make the shell start with an error code.
+true

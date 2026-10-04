@@ -1,7 +1,7 @@
 ################################################################################
 ## Author:      Devin W. Leaman (4lch4)                                       ##
 ## Version:     1.0.0                                                         ##
-## Filename:    secrets.sh                                                    ##
+## Filename:    secrets.zsh                                                   ##
 ## Created On:  07/16/2023 @ 11:08                                            ##
 ################################################################################
 ## Description:                                                               ##
@@ -21,4 +21,10 @@ CONFIG_NAME="prime_$COMP_NAME"
 
 # echo "Importing Doppler secrets from project \"$PROJECT_NAME\" and config \"$CONFIG_NAME\""
 
-source <(doppler secrets download --no-file --format env -p $PROJECT_NAME -c "$CONFIG_NAME")
+# Only on machines with the Doppler CLI that are logged in. Set
+# DOTFILES_SKIP_SECRETS=1 (e.g. in local.zsh) to turn this off on a machine.
+if [[ -z "$DOTFILES_SKIP_SECRETS" ]] && has doppler; then
+  source <(doppler secrets download --no-file --format env -p "$PROJECT_NAME" -c "$CONFIG_NAME" 2>/dev/null)
+fi
+
+unset COMP_NAME PROJECT_NAME CONFIG_NAME

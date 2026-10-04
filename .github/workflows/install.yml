@@ -1,0 +1,72 @@
+name: Install
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint install scripts
+        run: shellcheck -x install.sh lib/*.sh
+
+  install:
+    name: ${{ matrix.image }} / ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ubuntu:22.04
+          - ubuntu:24.04
+        profile:
+          - server
+          - dev
+    steps:
+      # A clean image has neither sudo nor a regular user, so set both up to
+      # match a fresh server where the installer runs as a normal sudo user.
+      - name: Prepare container
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sudo git ca-certificates curl >/dev/null
+          useradd --create-home --shell /bin/bash tester
+          echo 'tester ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tester
+
+      - uses: actions/checkout@v4
+        with:
+          path: dotfiles
+
+      - name: Install (${{ matrix.profile }})
+        run: |
+          cp -r dotfiles /home/tester/.dotfiles
+          chown -R tester:tester /home/tester/.dotfiles
+          sudo -u tester -H bash -c 'cd ~ && ~/.dotfiles/install.sh --profile ${{ matrix.profile }}'
+
+      - name: Re-run is a no-op
+        run: sudo -u tester -H bash -c 'cd ~ && ~/.dotfiles/install.sh --profile ${{ matrix.profile }}'
+
+      - name: zsh starts without errors
+        run: |
+          sudo -u tester -H env TERM=xterm-256color zsh -i -c 'exit' 2> stderr.txt
+          if [ -s stderr.txt ]; then
+            echo "::error::zsh printed to stderr on startup"
+            cat stderr.txt
+            exit 1
+          fi
+          [ "$(getent passwd tester | cut -d: -f7)" = "$(command -v zsh)" ]
+
+      - name: Dev tools are on PATH
+        if: matrix.profile == 'dev'
+        run: |
+          sudo -u tester -H env TERM=xterm-256color zsh -i -c '
+            set -e
+            for cmd in go node npm pnpm task gh doppler goreleaser ko eza zoxide fzf; do
+              printf "%-12s " "$cmd"; command -v "$cmd"
+            done'
