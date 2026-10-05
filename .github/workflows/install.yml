@@ -77,8 +77,9 @@ jobs:
           sudo -u tester -H env TERM=xterm-256color zsh -i -c '
             missing=0
             for cmd in go node npm pnpm task gh doppler goreleaser ko eza zoxide fzf; do
-              if path=$(command -v "$cmd"); then
-                printf "%-12s %s\n" "$cmd" "$path"
+              # Not `path`: in zsh that variable is tied to $PATH.
+              if location=$(command -v "$cmd"); then
+                printf "%-12s %s\n" "$cmd" "$location"
               else
                 echo "::error title=Not on PATH::$cmd"
                 missing=1

@@ -33,7 +33,7 @@ install_node() {
 
     info "Installing nvm $version"
     # PROFILE=/dev/null stops the nvm installer from appending to ~/.zshrc,
-    # which is a symlink into this repo. vars.zsh already sets NVM_DIR.
+    # which is a symlink into this repo. .zshrc already sets NVM_DIR.
     curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/$version/install.sh" | PROFILE=/dev/null bash >/dev/null
   fi
 

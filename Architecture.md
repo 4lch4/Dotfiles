@@ -11,17 +11,15 @@ A quick tour of how this repo is put together.
 │   ├── ubuntu.sh           # apt packages and Ubuntu-specific dev tooling.
 │   └── macos.sh            # Homebrew packages.
 ├── home/                   # Mirrors $HOME: every file here is symlinked to the same path there.
-│   ├── .zshrc              # Also holds the oh-my-zsh theme and plugins=(...) list.
+│   ├── .zshrc              # Environment, PATH, oh-my-zsh theme/plugins=(...), load order.
 │   ├── .zsh_plugins.txt    # antidote plugins loaded before oh-my-zsh (zsh-completions, autosuggestions).
 │   ├── .zsh_plugins.post.txt  # antidote plugins loaded last (zsh-syntax-highlighting).
 │   └── .config/zsh/
-│       ├── vars.zsh        # Environment variables and PATH. Loaded before plugins.
 │       ├── functions.zsh   # Shell functions.
-│       ├── aliases.zsh     # Aliases.
-│       └── secrets.zsh     # Loads Doppler secrets when the CLI is available.
+│       └── aliases.zsh     # Aliases.
 ├── sandbox/                # Scratch space for experiments; not used by the installer.
 └── .github/workflows/
-    ├── install.yml         # ShellCheck + install tests on clean Ubuntu 22.04/24.04 containers.
+    ├── install.yml         # ShellCheck + install tests on clean Ubuntu 24.04/26.04 containers.
     └── scans.yml           # Daily Gitleaks scan.
 ```
 
@@ -36,11 +34,11 @@ A quick tour of how this repo is put together.
 
 ## How the shell loads
 
-`~/.zshrc` loads things in this order: `vars.zsh` → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide/Doppler integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → `secrets.zsh` → antidote `.zsh_plugins.post.txt`.
+`~/.zshrc` loads things in this order: environment variables and PATH (`NVM_DIR`, `~/.local/bin`, Go) → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide/Doppler integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → antidote `.zsh_plugins.post.txt`.
 
 zsh-completions has to be on `fpath` before oh-my-zsh runs compinit, and zsh-syntax-highlighting has to come after everything that defines widgets, which is why antidote loads in two parts around oh-my-zsh.
 
-Anything that depends on an optional tool is guarded with `has <cmd>`, so the same config starts cleanly on a bare server and on a fully loaded dev machine.
+Anything that depends on an optional tool is guarded with `has <cmd>`, and PATH entries are only added when the directory exists, so the same config starts cleanly on a bare server and on a fully loaded dev machine. The fzf key bindings are skipped under `zsh -i -c ...`, where there's no line editor to bind to.
 
 ## Adding things
 

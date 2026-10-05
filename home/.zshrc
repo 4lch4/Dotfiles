@@ -69,7 +69,9 @@ source "$ZSH/oh-my-zsh.sh"
 
 # fzf key bindings/completion. Newer fzf (0.48+) generates them itself; older
 # Ubuntu packages ship them as files, which minimal images may have stripped.
-if has fzf; then
+# Skipped under `zsh -i -c ...` (e.g. `ssh host "zsh -ic ..."`): key bindings
+# are useless there, and newer fzf's scripts print "can't change option: zle".
+if has fzf && [[ -z "$ZSH_EXECUTION_STRING" ]]; then
   if fzf --zsh >/dev/null 2>&1; then
     source <(fzf --zsh)
   else

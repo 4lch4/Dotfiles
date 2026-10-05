@@ -2,7 +2,7 @@
 
 ################################################################################
 ## Ubuntu package installation. Sourced by install.sh; not meant to be run.   ##
-## Tested on Ubuntu 22.04 and 24.04.                                          ##
+## Tested on Ubuntu 24.04 and 26.04 (22.04 should work but is untested).     ##
 ################################################################################
 
 # Installed on every Ubuntu machine (server and dev).
