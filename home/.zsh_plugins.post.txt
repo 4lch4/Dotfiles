@@ -1,0 +1,4 @@
+# Third-party zsh plugins loaded by antidote *after* oh-my-zsh.
+# zsh-syntax-highlighting has to come after everything that defines widgets.
+
+zsh-users/zsh-syntax-highlighting

@@ -4,19 +4,50 @@
 
 export ZSH_CFG_DIR="$HOME/.config/zsh"
 
-# Helpers used here and by the plugin list.
+# Helpers used here and in ~/.config/zsh/*.zsh.
 has() { (( $+commands[$1] )) }
 is-macos() { [[ "$OSTYPE" == darwin* ]] }
 
 # Environment first, so plugins can see PATH, NVM_DIR, etc.
 source "$ZSH_CFG_DIR/vars.zsh"
 
-# oh-my-zsh settings; must be set before its library is loaded.
+#region oh-my-zsh settings (must be set before oh-my-zsh.sh is sourced)
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="steeef"
 HIST_STAMPS="yyyy-mm-dd"
 
-# Plugins (see ~/.zsh_plugins.txt).
+# Most of these only add aliases/completions when the tool is installed.
+plugins=(
+  colorize
+  command-not-found
+  common-aliases
+  docker
+  docker-compose
+  doctl
+  dotenv
+  extract
+  gh
+  git
+  kubectl
+  npm
+  nvm
+  rsync
+  rust
+  sudo
+  terraform
+  tmux
+  urltools
+  vscode
+)
+is-macos && plugins+=(brew)
+#endregion oh-my-zsh settings
+
+# Third-party plugins that must be on fpath before oh-my-zsh runs compinit
+# (see ~/.zsh_plugins.txt).
 source "${ZDOTDIR:-$HOME}/.antidote/antidote.zsh"
-antidote load
+antidote load "${ZDOTDIR:-$HOME}/.zsh_plugins.txt"
+
+source "$ZSH/oh-my-zsh.sh"
 
 # fzf key bindings/completion. Newer fzf (0.48+) generates them itself; older
 # Ubuntu packages ship them as files, which minimal images may have stripped.
@@ -41,6 +72,9 @@ source "$ZSH_CFG_DIR/aliases.zsh"
 [[ -f "$ZSH_CFG_DIR/local.zsh" ]] && source "$ZSH_CFG_DIR/local.zsh"
 
 source "$ZSH_CFG_DIR/secrets.zsh"
+
+# Plugins that must load after everything else (see ~/.zsh_plugins.post.txt).
+antidote load "${ZDOTDIR:-$HOME}/.zsh_plugins.post.txt"
 
 # Don't let a missing optional file above make the shell start with an error code.
 true

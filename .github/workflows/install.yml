@@ -62,6 +62,14 @@ jobs:
           fi
           [ "$(getent passwd tester | cut -d: -f7)" = "$(command -v zsh)" ]
 
+      - name: oh-my-zsh is installed and loaded
+        run: |
+          sudo -u tester -H env TERM=xterm-256color zsh -i -c '
+            set -e
+            [ "$ZSH" = "$HOME/.oh-my-zsh" ]
+            omz version
+            [ "$ZSH_THEME" = steeef ]'
+
       - name: Dev tools are on PATH
         if: matrix.profile == 'dev'
         run: |

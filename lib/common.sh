@@ -100,11 +100,54 @@ install_antidote() {
     git clone --depth=1 --quiet https://github.com/mattmc3/antidote.git "$ANTIDOTE_DIR"
   fi
 
-  if has zsh; then
-    info "Downloading zsh plugins"
-    zsh -c "source '$ANTIDOTE_DIR/antidote.zsh' && antidote bundle <'$HOME/.zsh_plugins.txt' >'$HOME/.zsh_plugins.zsh'"
-  else
+  if ! has zsh; then
     warn "zsh isn't installed, skipping plugin download."
+    return 0
+  fi
+
+  info "Downloading zsh plugins"
+  local list
+  for list in "$HOME"/.zsh_plugins*.txt; do
+    [[ -f "$list" ]] || continue
+    zsh -c "source '$ANTIDOTE_DIR/antidote.zsh' && antidote bundle <'$list' >'${list%.txt}.zsh'"
+  done
+}
+
+OMZ_DIR="$HOME/.oh-my-zsh"
+
+# Install oh-my-zsh with its official installer, or update an existing git
+# install. Runs after link_dotfiles: KEEP_ZSHRC=yes keeps the installer from
+# replacing the ~/.zshrc symlink, and --unattended stops it from changing the
+# login shell or starting zsh (set_login_shell_to_zsh handles the shell).
+install_oh_my_zsh() {
+  if [[ -d "$OMZ_DIR/.git" ]]; then
+    info "Updating oh-my-zsh"
+    git -C "$OMZ_DIR" pull --ff-only --quiet || warn "Couldn't update oh-my-zsh in $OMZ_DIR, leaving it as is."
+    return 0
+  fi
+
+  if [[ -f "$OMZ_DIR/oh-my-zsh.sh" ]]; then
+    warn "$OMZ_DIR exists but isn't a git checkout, leaving it as is."
+    return 0
+  fi
+
+  if [[ -e "$OMZ_DIR" ]]; then
+    local backup="$BACKUP_DIR/.oh-my-zsh"
+    mkdir -p "$BACKUP_DIR"
+    mv "$OMZ_DIR" "$backup"
+    warn "Backed up incomplete $OMZ_DIR to $backup"
+  fi
+
+  info "Installing oh-my-zsh"
+  local installer output
+  installer="$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" ||
+    die "Couldn't download the oh-my-zsh installer."
+
+  # The installer is chatty (it lists every remote branch), so only show its
+  # output when something goes wrong.
+  if ! output="$(ZSH="$OMZ_DIR" KEEP_ZSHRC=yes RUNZSH=no CHSH=no sh -c "$installer" "" --unattended 2>&1)"; then
+    echo "$output" >&2
+    die "oh-my-zsh installation failed."
   fi
 }
 

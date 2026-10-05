@@ -1,6 +1,6 @@
 # Dotfiles
 
-My shell configuration (zsh + [antidote][antidote] + oh-my-zsh plugins) and an installer that sets it up on Ubuntu servers, Ubuntu dev machines and macOS.
+My shell configuration (zsh + [oh-my-zsh][omz] + a few plugins via [antidote][antidote]) and an installer that sets it up on Ubuntu servers, Ubuntu dev machines and macOS.
 
 ## Install
 
@@ -28,18 +28,18 @@ It's safe to run again at any time, e.g. to pick up changes after a `git pull`: 
 | Option                     | Description                                                                 |
 | -------------------------- | --------------------------------------------------------------------------- |
 | `--profile server` / `dev` | What to install (default `server`, or set `DOTFILES_PROFILE`).              |
-| `--links-only`             | Only link the config files and set up antidote; install no packages.        |
+| `--links-only`             | Only link the config files and set up oh-my-zsh/antidote; no packages.      |
 | `--no-chsh`                | Don't change the login shell to zsh.                                        |
 | `DOTFILES_DIR=...`         | Where the repo is cloned when bootstrapping (default `~/.dotfiles`).        |
 | `DOTFILES_BRANCH=...`      | Branch to clone when bootstrapping (default `main`), handy for testing PRs. |
 
 ### What each profile installs
 
-|                  | `server`                                             | `dev` (adds)                                                                                                                         |
-| ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **Ubuntu** (apt) | zsh, git, curl, fzf, zoxide, eza, tmux, jq, ripgrep  | build-essential, gh, Doppler, Go (official tarball), Task                                                                            |
-| **macOS** (brew) | zsh, git, fzf, zoxide, eza, tmux, jq, ripgrep        | go, ko, gh, go-task, goreleaser, Doppler                                                                                             |
-| **Both**         | antidote + plugins, config symlinks, zsh login shell | nvm + latest Node LTS, global npm packages (pnpm, yarn, typescript, ts-node, prettier, wrangler), goreleaser and ko via `go install` |
+|                  | `server`                                                        | `dev` (adds)                                                                                                                         |
+| ---------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Ubuntu** (apt) | zsh, git, curl, fzf, zoxide, eza, tmux, jq, ripgrep             | build-essential, gh, Doppler, Go (official tarball), Task                                                                            |
+| **macOS** (brew) | zsh, git, fzf, zoxide, eza, tmux, jq, ripgrep                   | go, ko, gh, go-task, goreleaser, Doppler                                                                                             |
+| **Both**         | oh-my-zsh, antidote + plugins, config symlinks, zsh login shell | nvm + latest Node LTS, global npm packages (pnpm, yarn, typescript, ts-node, prettier, wrangler), goreleaser and ko via `go install` |
 
 Ubuntu 22.04 and 24.04 are tested in CI. macOS support is kept but not currently tested.
 
@@ -56,3 +56,4 @@ export DOTFILES_SKIP_SECRETS=1
 See [Architecture.md](./Architecture.md).
 
 [antidote]: https://antidote.sh
+[omz]: https://ohmyz.sh

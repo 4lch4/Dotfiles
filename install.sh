@@ -41,12 +41,12 @@ Usage: install.sh [options]
 
 Options:
   -p, --profile <name>  What to install (default: server, or $DOTFILES_PROFILE)
-                          server  zsh + plugins and a few CLI tools (fzf, zoxide,
-                                  eza, tmux, jq, ripgrep). Meant for servers.
+                          server  zsh, oh-my-zsh, plugins and a few CLI tools
+                                  (fzf, zoxide, eza, tmux, jq, ripgrep).
                           dev     everything in server, plus Go, Node (nvm),
                                   Task, gh, Doppler and global npm/Go tools.
-      --links-only      Only (re)link the config files and plugin manager;
-                        don't install any packages.
+      --links-only      Only (re)link the config files and set up oh-my-zsh
+                        and antidote; don't install any packages.
       --no-chsh         Don't change the login shell to zsh.
   -h, --help            Show this help.
 
@@ -163,6 +163,7 @@ if [[ "$LINKS_ONLY" == false ]]; then
 fi
 
 link_dotfiles
+install_oh_my_zsh
 install_antidote
 
 if [[ "$CHANGE_SHELL" == true ]]; then
