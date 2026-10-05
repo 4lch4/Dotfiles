@@ -19,12 +19,8 @@ BREW_SERVER_PACKAGES=(
 
 # Added on top of the server list for the dev profile.
 BREW_DEV_PACKAGES=(
-  go
-  ko
   gh
   go-task
-  goreleaser/tap/goreleaser
-  dopplerhq/cli/doppler
 )
 
 ensure_homebrew() {

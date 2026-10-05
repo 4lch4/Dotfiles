@@ -35,11 +35,11 @@ It's safe to run again at any time, e.g. to pick up changes after a `git pull`: 
 
 ### What each profile installs
 
-|                  | `server`                                                        | `dev` (adds)                                                                                                               |
-| ---------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Ubuntu** (apt) | zsh, git, curl, fzf, zoxide, eza, tmux, jq, ripgrep             | build-essential, gh, Doppler, Go (official tarball), Task                                                                  |
-| **macOS** (brew) | zsh, git, fzf, zoxide, eza, tmux, jq, ripgrep                   | go, ko, gh, go-task, goreleaser, Doppler                                                                                   |
-| **Both**         | oh-my-zsh, antidote + plugins, config symlinks, zsh login shell | nvm + latest Node LTS, global npm packages (pnpm, yarn, typescript, ts-node, prettier), goreleaser and ko via `go install` |
+|                  | `server`                                                        | `dev` (adds)                                                                           |
+| ---------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Ubuntu** (apt) | zsh, git, curl, fzf, zoxide, eza, tmux, jq, ripgrep             | build-essential, gh, Task                                                              |
+| **macOS** (brew) | zsh, git, fzf, zoxide, eza, tmux, jq, ripgrep                   | gh, go-task                                                                            |
+| **Both**         | oh-my-zsh, antidote + plugins, config symlinks, zsh login shell | nvm + latest Node LTS, global npm packages (pnpm, yarn, typescript, ts-node, prettier) |
 
 Ubuntu 24.04 and 26.04 are tested in CI. 22.04 should still work but isn't tested. macOS support is kept but not currently tested.
 

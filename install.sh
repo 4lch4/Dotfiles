@@ -43,8 +43,8 @@ Options:
   -p, --profile <name>  What to install (default: server, or $DOTFILES_PROFILE)
                           server  zsh, oh-my-zsh, plugins and a few CLI tools
                                   (fzf, zoxide, eza, tmux, jq, ripgrep).
-                          dev     everything in server, plus Go, Node (nvm),
-                                  Task, gh, Doppler and global npm/Go tools.
+                          dev     everything in server, plus Node (nvm) with
+                                  global npm packages, Task and gh.
       --links-only      Only (re)link the config files and set up oh-my-zsh
                         and antidote; don't install any packages.
       --no-chsh         Don't change the login shell to zsh.
@@ -158,7 +158,6 @@ if [[ "$LINKS_ONLY" == false ]]; then
     install_dev_packages
     # Shared between Ubuntu and macOS, defined in lib/dev.sh.
     install_node
-    install_go_tools
   fi
 fi
 

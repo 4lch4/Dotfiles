@@ -18,15 +18,9 @@ export NVM_DIR="$HOME/.nvm"
 #endregion Directory Variables
 
 #region PATH
-# Where install.sh puts Task (~/.local/bin), Go (/usr/local/go/bin on Ubuntu)
-# and `go install` tools ($GOPATH/bin, ~/go/bin by default). Entries that
-# don't exist on this machine are skipped.
+# install.sh puts Task in ~/.local/bin on Ubuntu.
 typeset -U path
 [[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
-for dir in /usr/local/go/bin "${GOPATH:-$HOME/go}/bin"; do
-  [[ -d "$dir" ]] && path+=("$dir")
-done
-unset dir
 #endregion PATH
 
 #region oh-my-zsh settings (must be set before oh-my-zsh.sh is sourced)
@@ -82,7 +76,6 @@ if has fzf && [[ -z "$ZSH_EXECUTION_STRING" ]]; then
   fi
 fi
 has zoxide && eval "$(zoxide init zsh)"
-has doppler && source <(doppler completion 2>/dev/null)
 
 # My customizations go last so nothing above overrides them.
 source "$ZSH_CFG_DIR/functions.zsh"

@@ -7,7 +7,7 @@ A quick tour of how this repo is put together.
 ├── install.sh              # The only entry point. Parses options, bootstraps, runs everything below.
 ├── lib/
 │   ├── common.sh           # Logging, OS detection, symlinking, oh-my-zsh, antidote, login shell.
-│   ├── dev.sh              # Dev-profile steps shared by every OS (nvm/Node, Go tools).
+│   ├── dev.sh              # Dev-profile steps shared by every OS (nvm/Node).
 │   ├── ubuntu.sh           # apt packages and Ubuntu-specific dev tooling.
 │   └── macos.sh            # Homebrew packages.
 ├── home/                   # Mirrors $HOME: every file here is symlinked to the same path there.
@@ -34,7 +34,7 @@ A quick tour of how this repo is put together.
 
 ## How the shell loads
 
-`~/.zshrc` loads things in this order: environment variables and PATH (`NVM_DIR`, `~/.local/bin`, Go) → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide/Doppler integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → antidote `.zsh_plugins.post.txt`.
+`~/.zshrc` loads things in this order: environment variables and PATH (`NVM_DIR`, `~/.local/bin`) → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → antidote `.zsh_plugins.post.txt`.
 
 zsh-completions has to be on `fpath` before oh-my-zsh runs compinit, and zsh-syntax-highlighting has to come after everything that defines widgets, which is why antidote loads in two parts around oh-my-zsh.
 

@@ -101,33 +101,6 @@ install_gh() {
   apt_install gh
 }
 
-install_doppler() {
-  has doppler && return 0
-
-  info "Installing Doppler CLI"
-  curl -fsSL --retry 3 --tlsv1.2 --proto "=https" https://cli.doppler.com/install.sh | $SUDO sh >/dev/null
-}
-
-# Ubuntu's golang package lags well behind, so use the official tarball.
-install_go() {
-  local latest current=""
-  latest="$(curl -fsSL 'https://go.dev/VERSION?m=text' | head -n1)"
-  [[ -n "$latest" ]] || die "Couldn't determine the latest Go version."
-
-  if [[ -x /usr/local/go/bin/go ]]; then
-    current="$(/usr/local/go/bin/go env GOVERSION)"
-  fi
-  [[ "$current" == "$latest" ]] && return 0
-
-  info "Installing Go $latest (was: ${current:-not installed})"
-  local tmp
-  tmp="$(mktemp -d)"
-  curl -fsSL "https://go.dev/dl/${latest}.linux-$(detect_arch).tar.gz" -o "$tmp/go.tar.gz"
-  $SUDO rm -rf /usr/local/go
-  $SUDO tar -C /usr/local -xzf "$tmp/go.tar.gz"
-  rm -rf "$tmp"
-}
-
 install_task() {
   has task && return 0
 
@@ -140,8 +113,6 @@ install_dev_packages() {
   info "Installing dev packages"
   apt_install "${APT_DEV_PACKAGES[@]}"
   install_gh
-  install_doppler
-  install_go
   install_task
 }
 #endregion Dev

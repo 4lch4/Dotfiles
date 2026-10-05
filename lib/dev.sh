@@ -16,12 +16,6 @@ NPM_GLOBAL_PACKAGES=(
   prettier
 )
 
-# Go tools installed with `go install`.
-GO_TOOLS=(
-  github.com/goreleaser/goreleaser/v2@latest
-  github.com/google/ko@latest
-)
-
 install_node() {
   export NVM_DIR="$HOME/.nvm"
 
@@ -49,26 +43,4 @@ install_node() {
   info "Installing global npm packages: ${NPM_GLOBAL_PACKAGES[*]}"
   npm install --global --silent --no-fund --no-audit "${NPM_GLOBAL_PACKAGES[@]}"
   set -u
-}
-
-install_go_tools() {
-  local go_bin
-  go_bin="$(command -v go || true)"
-  [[ -n "$go_bin" ]] || go_bin=/usr/local/go/bin/go
-  [[ -x "$go_bin" ]] || { warn "Go isn't installed, skipping Go tools."; return 0; }
-
-  export GOPATH="${GOPATH:-$HOME/go}"
-
-  local tool name
-  for tool in "${GO_TOOLS[@]}"; do
-    # github.com/goreleaser/goreleaser/v2@latest -> goreleaser
-    name="${tool%%@*}"
-    name="${name%/v[0-9]*}"
-    name="${name##*/}"
-    if has "$name" || [[ -x "$GOPATH/bin/$name" ]]; then
-      continue
-    fi
-    info "go install $tool"
-    "$go_bin" install "$tool"
-  done
 }
