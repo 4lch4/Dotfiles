@@ -23,11 +23,9 @@ alias esp="espanso"
 alias numi="numi-cli"
 alias pvm="pyenv"
 alias tg="terragrunt"
-alias cobra="cobra-cli"
 alias ail="ailcha"
 alias tx="tmux"
 alias n="npm"
-alias glint="golangci-lint run ./..."
 alias sf="seedfile"
 
 # Remove any existing `t` alias (e.g. from a plugin) before defining mine.
