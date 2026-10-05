@@ -14,7 +14,6 @@ NPM_GLOBAL_PACKAGES=(
   typescript
   ts-node
   prettier
-  wrangler
 )
 
 # Go tools installed with `go install`.
