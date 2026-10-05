@@ -8,8 +8,14 @@ export ZSH_CFG_DIR="$HOME/.config/zsh"
 has() { (( $+commands[$1] )) }
 is-macos() { [[ "$OSTYPE" == darwin* ]] }
 
-# Environment first, so plugins can see PATH, NVM_DIR, etc.
-source "$ZSH_CFG_DIR/vars.zsh"
+# Environment first.
+#region Directory Variables
+CONFIG_DIR="$HOME/.config"
+DEVELOPMENT_DIR="$HOME/Development"
+
+# Loaded by the oh-my-zsh nvm plugin.
+export NVM_DIR="$HOME/.nvm"
+#endregion Directory Variables
 
 #region oh-my-zsh settings (must be set before oh-my-zsh.sh is sourced)
 export ZSH="$HOME/.oh-my-zsh"
@@ -68,10 +74,8 @@ has doppler && source <(doppler completion 2>/dev/null)
 source "$ZSH_CFG_DIR/functions.zsh"
 source "$ZSH_CFG_DIR/aliases.zsh"
 
-# Per-machine overrides. Loaded before secrets so it can set DOTFILES_SKIP_SECRETS.
+# Per-machine overrides.
 [[ -f "$ZSH_CFG_DIR/local.zsh" ]] && source "$ZSH_CFG_DIR/local.zsh"
-
-source "$ZSH_CFG_DIR/secrets.zsh"
 
 # Plugins that must load after everything else (see ~/.zsh_plugins.post.txt).
 antidote load "${ZDOTDIR:-$HOME}/.zsh_plugins.post.txt"
