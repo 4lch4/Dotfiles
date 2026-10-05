@@ -1,58 +1,49 @@
 # Architecture
 
-This file will provide a generic overview of the architecture of this repository.
+A quick tour of how this repo is put together.
 
-## File/Folder Structure
-
-First up, let's take a look at the file/folder structure of this repository and what each file/folder is used for.
-
-```bash
+```text
 .
-├── .github/
-│   └── workflows/
-│       └── scans.yml
-├── scripts/
-│   ├── install/
-│   │   ├── macos.sh
-│   │   └── ubuntu.sh
-│   └── shared/
-│       ├── aliases.sh
-│       ├── functions.sh
-│       ├── secrets.sh
-│       ├── vars.sh
-│       └── .zshrc
-├── .gitignore
-├── install.sh
-├── README.md
-└── Taskfile.yml
+├── install.sh              # The only entry point. Parses options, bootstraps, runs everything below.
+├── lib/
+│   ├── common.sh           # Logging, OS detection, symlinking, oh-my-zsh, antidote, login shell.
+│   ├── dev.sh              # Dev-profile steps shared by every OS (nvm/Node).
+│   ├── ubuntu.sh           # apt packages and Ubuntu-specific dev tooling.
+│   └── macos.sh            # Homebrew packages.
+├── home/                   # Mirrors $HOME: every file here is symlinked to the same path there.
+│   ├── .zshrc              # Environment, PATH, oh-my-zsh theme/plugins=(...), load order.
+│   ├── .zsh_plugins.txt    # antidote plugins loaded before oh-my-zsh (zsh-completions, autosuggestions).
+│   ├── .zsh_plugins.post.txt  # antidote plugins loaded last (zsh-syntax-highlighting).
+│   └── .config/zsh/
+│       ├── functions.zsh   # Shell functions.
+│       └── aliases.zsh     # Aliases.
+├── sandbox/                # Scratch space for experiments; not used by the installer.
+└── .github/workflows/
+    ├── install.yml         # ShellCheck + install tests on clean Ubuntu 24.04/26.04 containers.
+    └── scans.yml           # Daily Gitleaks scan.
 ```
 
-### `.github/`
+## How `install.sh` runs
 
-This folder is a folder unique to GitHub as it contains files that are used by GitHub to perform various actions. In this case, we have the `workflows` directory, which contains the configuration for GitHub Actions. At the moment, there is only one workflow defined, [`scans.yml`](./.github/workflows/scans.yml), which performs some basic security scans on the repository on a regular basis.
+1. **Bootstrap.** If the script isn't running from inside a clone (e.g. it was piped from `curl`), it installs git if needed, clones the repo to `$DOTFILES_DIR` (or fast-forwards an existing clone), and re-executes itself from there with the same arguments.
+2. **Packages.** It sources `lib/ubuntu.sh` or `lib/macos.sh` depending on the OS. Each defines `install_server_packages` and `install_dev_packages`. The dev profile then runs the shared steps from `lib/dev.sh`. Every step checks first and skips what's already installed. `--links-only` skips this stage entirely.
+3. **Links.** Every file under `home/` is symlinked into `$HOME` at the same relative path. Existing files are backed up to `~/.dotfiles-backup/<timestamp>/` rather than overwritten.
+4. **oh-my-zsh.** If `~/.oh-my-zsh` doesn't exist, the official installer runs unattended (it keeps the linked `~/.zshrc` and doesn't change the shell). An existing git install is fast-forwarded instead.
+5. **antidote.** antidote is cloned (or updated) into `~/.antidote` and both plugin bundles are pre-built, so the first shell starts quickly and plugin problems surface during install.
+6. **Login shell.** The user's login shell is switched to zsh unless `--no-chsh` is passed.
 
-### `scripts/`
+## How the shell loads
 
-This folder contains all of the scripts that are used to install, configure, or otherwise customize my environment. These scripts are then further divided into the `install` and `shared` directories.
+`~/.zshrc` loads things in this order: environment variables and PATH (`NVM_DIR`, `~/.local/bin`) → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → antidote `.zsh_plugins.post.txt`.
 
-#### `install/`
+zsh-completions has to be on `fpath` before oh-my-zsh runs compinit, and zsh-syntax-highlighting has to come after everything that defines widgets, which is why antidote loads in two parts around oh-my-zsh.
 
-This directory contains the scripts that are called by the root `install.sh` script based on which OS you're using. For example, if you're using macOS, the `install.sh` script will call the `macos.sh` script, which will then install the necessary software and apply the necessary customizations for macOS.
+Anything that depends on an optional tool is guarded with `has <cmd>`, and PATH entries are only added when the directory exists, so the same config starts cleanly on a bare server and on a fully loaded dev machine. The fzf key bindings are skipped under `zsh -i -c ...`, where there's no line editor to bind to.
 
-#### `shared/`
+## Adding things
 
-And now, the last directory related to scripts. This directory contains the scripts that are used no matter which OS you're using. For example, the `aliases.sh` script contains all of the aliases that I use in my terminal environment, while the `functions.sh` script contains all of the functions that I use in my terminal environment.
-
-### `.gitignore`
-
-I don't even feel like I need to mention this but I also don't like skipping items in a list so here we are 😅
-
-### `install.sh`
-
-This file is the main entry point for installing and configuring my terminal environment. It is responsible for determining which OS you're using and then calling the appropriate script from the `scripts/install` directory, which will handle the remainder of the installation process.
-
-### `Taskfile.yml`
-
-This file is used by [Taskfile][0] to define the various tasks that can be run against this repository. For example, you can run the `pretty` task to run `prettier` against all of the files in this repository and have them formatted according to the rules defined in the `.prettierrc` file.
-
-[0]: https://taskfile.dev
+- **A package for every machine:** add it to `APT_SERVER_PACKAGES` in `lib/ubuntu.sh` (and `BREW_SERVER_PACKAGES` in `lib/macos.sh`).
+- **A dev-only package:** `APT_DEV_PACKAGES` / `BREW_DEV_PACKAGES`, or an `install_<tool>` function called from `install_dev_packages` if it needs its own repo or download.
+- **An oh-my-zsh plugin:** add it to `plugins=(...)` in `home/.zshrc`.
+- **A third-party zsh plugin:** add a line to `home/.zsh_plugins.txt` (or `.zsh_plugins.post.txt` if it must load last); antidote picks it up in the next shell.
+- **A new config file:** drop it under `home/` at the path it should have in `$HOME` and re-run `install.sh --links-only`.

@@ -1,0 +1,8 @@
+# Third-party zsh plugins loaded by antidote (https://antidote.sh) *before*
+# oh-my-zsh, so zsh-completions is on fpath when oh-my-zsh runs compinit.
+# oh-my-zsh's own plugins and theme are set in ~/.zshrc (plugins=(...)).
+# Plugins that must load last live in ~/.zsh_plugins.post.txt.
+# After editing, open a new shell; antidote rebuilds the bundle itself.
+
+zsh-users/zsh-completions kind:fpath path:src
+zsh-users/zsh-autosuggestions

@@ -1,9 +1,7 @@
-#!/bin/bash
-
 ################################################################################
 ## Author:      Devin W. Leaman (4lch4)                                       ##
 ## Version:     1.0.0                                                         ##
-## Filename:    functions.sh                                                  ##
+## Filename:    functions.zsh                                                 ##
 ## Created On:  07/16/2023 @ 11:07                                            ##
 ################################################################################
 ## Description:                                                               ##
@@ -27,7 +25,7 @@ function gt() {
 function grao() {
   REPO_URL="git@github.com:$1.git"
 
-  git remote add origin $REPO_URL
+  git remote add origin "$REPO_URL"
 
   echo "Added \"$REPO_URL\" as remote origin"
 }

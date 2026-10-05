@@ -1,43 +1,60 @@
-# Terminal Customization
+# Dotfiles
 
-This repository is home to a collection of configuration files, scripts, etc., for customizing my terminal environment.
+My shell configuration (zsh + [oh-my-zsh][omz] + a few plugins via [antidote][antidote]) and an installer that sets it up on Ubuntu servers, Ubuntu dev machines and macOS.
 
-## Architecture
+## Install
 
-For a detailed overview of the architecture of this repository, please see the [Architecture.md](./Architecture.md) file.
-
-## One-Line Installation
-
-If you're feeling brave (or lazy), you can run the following one-liner to install and apply my customizations and the necessary pre-requisites:
+One command, on a fresh machine or an existing one. Run it as your normal user (it uses `sudo` when it needs to):
 
 ```bash
+# Server: zsh, oh-my-zsh, plugins and a handful of CLI tools.
 curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | bash
+
+# Dev machine: everything above plus the development toolchain.
+curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | bash -s -- --profile dev
 ```
 
-## Pre-requisites
-
-In order for the following installation steps to work properly, you'll need to have the following software installed:
-
-| Name          | Description                                   |
-| ------------- | --------------------------------------------- |
-| [Homebrew][0] | Used to install the [Taskfile][1] software.   |
-| [Taskfile][1] | A modern replacement for [Make][2]/Makefiles. |
-
-## Applying Customizations
-
-Once you have the pre-requisites installed, you can run the following commands to apply my customizations:
+The script clones this repo to `~/.dotfiles` and re-runs itself from there. If you already have a clone, run it directly instead:
 
 ```bash
-# Clone this repository to your local machine.
-git clone git@github.com:4lch4/Dotfiles.git
-
-# Change into the cloned repository.
-cd Dotfiles
-
-# Run the setup task to apply the customizations.
-task setup
+git clone git@github.com:4lch4/Dotfiles.git ~/.dotfiles
+~/.dotfiles/install.sh --profile dev
 ```
 
-[0]: https://brew.sh
-[1]: https://taskfile.dev
-[2]: https://www.gnu.org/software/make
+It's safe to run again at any time, e.g. to pick up changes after a `git pull`: installed packages are skipped, correct symlinks are left alone, and any existing file it would replace is moved to `~/.dotfiles-backup/<timestamp>/` first.
+
+### Options
+
+| Option                     | Description                                                                 |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `--profile server` / `dev` | What to install (default `server`, or set `DOTFILES_PROFILE`).              |
+| `--links-only`             | Only link the config files and set up oh-my-zsh/antidote; no packages.      |
+| `--no-chsh`                | Don't change the login shell to zsh.                                        |
+| `DOTFILES_DIR=...`         | Where the repo is cloned when bootstrapping (default `~/.dotfiles`).        |
+| `DOTFILES_BRANCH=...`      | Branch to clone when bootstrapping (default `main`), handy for testing PRs. |
+
+### What each profile installs
+
+|                  | `server`                                                        | `dev` (adds)                                                                           |
+| ---------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Ubuntu** (apt) | zsh, git, curl, fzf, zoxide, eza, tmux, jq, ripgrep             | build-essential, gh, Task                                                              |
+| **macOS** (brew) | zsh, git, fzf, zoxide, eza, tmux, jq, ripgrep                   | gh, go-task                                                                            |
+| **Both**         | oh-my-zsh, antidote + plugins, config symlinks, zsh login shell | nvm + latest Node LTS, global npm packages (pnpm, yarn, typescript, ts-node, prettier) |
+
+Ubuntu 24.04 and 26.04 are tested in CI. 22.04 should still work but isn't tested. macOS support is kept but not currently tested.
+
+## Customizing a single machine
+
+Anything that should only apply to one machine goes in `~/.config/zsh/local.zsh`, which isn't tracked. It's loaded after my aliases and functions, so it can override them or add machine-specific environment variables and PATH entries. For example:
+
+```zsh
+export EDITOR=vim
+path+=("$HOME/some-tool/bin")
+```
+
+## Layout
+
+See [Architecture.md](./Architecture.md).
+
+[antidote]: https://antidote.sh
+[omz]: https://ohmyz.sh

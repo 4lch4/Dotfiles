@@ -1,46 +1,172 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ################################################################################
 ## Author:      Devin W. Leaman (4lch4)                                       ##
-## Version:     1.0.0                                                         ##
+## Version:     2.0.0                                                         ##
 ## Filename:    install.sh                                                    ##
-## Created On:  07/16/2023 @ 12:17                                            ##
 ################################################################################
 ## Description:                                                               ##
 ##                                                                            ##
+## The single entry point for installing these dotfiles. It works from a      ##
+## local clone or straight from curl: when it isn't running from inside the   ##
+## repo, it clones the repo to $DOTFILES_DIR (default ~/.dotfiles) and re-runs ##
+## itself from there.                                                         ##
 ##                                                                            ##
-## A script that will install the pre-requisites necessary to apply my shell  ##
-## customizations to a new MacOS or Linux system.                             ##
+## Safe to run repeatedly: packages that are already present are skipped,     ##
+## correct symlinks are left alone and any file it replaces is backed up.     ##
 ################################################################################
 ## Usage:                                                                     ##
 ##                                                                            ##
-## ./install.sh                                                               ##
+##   ./install.sh [--profile server|dev] [--links-only] [--no-chsh]           ##
+##                                                                            ##
+##   curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh \
+##     | bash -s -- --profile dev                                             ##
 ################################################################################
 
-YELLOW_TEXT="\033[1;33m"
-GREEN_TEXT="\033[1;32m"
-RESET_TEXT="\033[0m"
+set -euo pipefail
 
-# Determine if the current OS is MacOS or Linux and set the OS variable accordingly.
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  echo -e "${GREEN_TEXT}Detected OS is macOS, running macos-install.sh...${RESET_TEXT}"
+DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/4lch4/Dotfiles.git}"
+DOTFILES_BRANCH="${DOTFILES_BRANCH:-main}"
+DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
-  /bin/bash ./install/macos.sh
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  echo -e "${GREEN_TEXT}Detected OS is Linux, running ./install/linux-install.sh...${RESET_TEXT}"
+PROFILE="${DOTFILES_PROFILE:-server}"
+LINKS_ONLY=false
+CHANGE_SHELL=true
 
-  /bin/bash ./install/macos.sh
-else
-  echo "Unsupported OS: $OSTYPE"
-  exit 1
+ORIGINAL_ARGS=("$@")
+
+usage() {
+  cat <<'EOF'
+Usage: install.sh [options]
+
+Options:
+  -p, --profile <name>  What to install (default: server, or $DOTFILES_PROFILE)
+                          server  zsh, oh-my-zsh, plugins and a few CLI tools
+                                  (fzf, zoxide, eza, tmux, jq, ripgrep).
+                          dev     everything in server, plus Node (nvm) with
+                                  global npm packages, Task and gh.
+      --links-only      Only (re)link the config files and set up oh-my-zsh
+                        and antidote; don't install any packages.
+      --no-chsh         Don't change the login shell to zsh.
+  -h, --help            Show this help.
+
+Environment:
+  DOTFILES_DIR     Where the repo lives/gets cloned (default: ~/.dotfiles)
+  DOTFILES_BRANCH  Branch to clone when bootstrapping (default: main)
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p | --profile)
+      [[ $# -ge 2 ]] || { echo "--profile needs a value" >&2; exit 1; }
+      PROFILE="$2"
+      shift 2
+      ;;
+    --profile=*)
+      PROFILE="${1#*=}"
+      shift
+      ;;
+    --links-only)
+      LINKS_ONLY=true
+      shift
+      ;;
+    --no-chsh)
+      CHANGE_SHELL=false
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+case "$PROFILE" in
+  server | dev) ;;
+  *)
+    echo "Unknown profile '$PROFILE' (expected 'server' or 'dev')" >&2
+    exit 1
+    ;;
+esac
+
+#region Bootstrap
+# When piped from curl there's no repo on disk, so clone it and re-run from
+# there. `${BASH_SOURCE[0]:-}` is empty when the script is read from stdin.
+SCRIPT_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
-# if [[ "$OS" == "macos" && $(which brew) ]]; then
-#   echo "Both OS is macOS and Homebrew is installed, skipping installation.."
-# elif [[ "$OS" == "macos" ]]; then
-#   echo "OS is macOS but Homebrew is not installed, installing now..."
+if [[ -z "$SCRIPT_DIR" || ! -f "$SCRIPT_DIR/lib/common.sh" ]]; then
+  if ! command -v git >/dev/null 2>&1; then
+    echo "==> git is required, installing it..."
+    if command -v apt-get >/dev/null 2>&1; then
+      SUDO=""
+      [[ $EUID -ne 0 ]] && SUDO="sudo"
+      $SUDO apt-get update -qq
+      $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git ca-certificates
+    else
+      echo "Please install git and re-run this script." >&2
+      exit 1
+    fi
+  fi
 
-#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-# fi
+  if [[ -d "$DOTFILES_DIR/.git" ]]; then
+    echo "==> Updating existing clone in $DOTFILES_DIR"
+    git -C "$DOTFILES_DIR" pull --ff-only
+  else
+    echo "==> Cloning $DOTFILES_REPO into $DOTFILES_DIR"
+    git clone --branch "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_DIR"
+  fi
 
+  exec bash "$DOTFILES_DIR/install.sh" "${ORIGINAL_ARGS[@]+"${ORIGINAL_ARGS[@]}"}"
+fi
 
+DOTFILES_DIR="$SCRIPT_DIR"
+#endregion Bootstrap
+
+# shellcheck source=lib/common.sh
+source "$DOTFILES_DIR/lib/common.sh"
+
+OS="$(detect_os)"
+info "Installing dotfiles from $DOTFILES_DIR (os: $OS, profile: $PROFILE)"
+
+case "$OS" in
+  ubuntu)
+    # shellcheck source=lib/ubuntu.sh
+    source "$DOTFILES_DIR/lib/ubuntu.sh"
+    ;;
+  macos)
+    # shellcheck source=lib/macos.sh
+    source "$DOTFILES_DIR/lib/macos.sh"
+    ;;
+  *)
+    die "Unsupported OS. Only Ubuntu and macOS are supported."
+    ;;
+esac
+
+if [[ "$LINKS_ONLY" == false ]]; then
+  install_server_packages
+
+  if [[ "$PROFILE" == dev ]]; then
+    install_dev_packages
+    # Shared between Ubuntu and macOS, defined in lib/dev.sh.
+    install_node
+  fi
+fi
+
+link_dotfiles
+install_oh_my_zsh
+install_antidote
+
+if [[ "$CHANGE_SHELL" == true ]]; then
+  set_login_shell_to_zsh
+fi
+
+success "Done! Start a new shell (or run 'exec zsh') to load everything."
