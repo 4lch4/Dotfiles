@@ -17,6 +17,18 @@ DEVELOPMENT_DIR="$HOME/Development"
 export NVM_DIR="$HOME/.nvm"
 #endregion Directory Variables
 
+#region PATH
+# Where install.sh puts Task (~/.local/bin), Go (/usr/local/go/bin on Ubuntu)
+# and `go install` tools ($GOPATH/bin, ~/go/bin by default). Entries that
+# don't exist on this machine are skipped.
+typeset -U path
+[[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
+for dir in /usr/local/go/bin "${GOPATH:-$HOME/go}/bin"; do
+  [[ -d "$dir" ]] && path+=("$dir")
+done
+unset dir
+#endregion PATH
+
 #region oh-my-zsh settings (must be set before oh-my-zsh.sh is sourced)
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="steeef"
