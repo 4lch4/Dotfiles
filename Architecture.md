@@ -26,11 +26,12 @@ A quick tour of how this repo is put together.
 ## How `install.sh` runs
 
 1. **Bootstrap.** If the script isn't running from inside a clone (e.g. it was piped from `curl`), it installs git if needed, clones the repo to `$DOTFILES_DIR` (or fast-forwards an existing clone), and re-executes itself from there with the same arguments.
-2. **Packages.** It sources `lib/ubuntu.sh` or `lib/macos.sh` depending on the OS. Each defines `install_server_packages` and `install_dev_packages`. The dev profile then runs the shared steps from `lib/dev.sh`. Every step checks first and skips what's already installed. `--links-only` skips this stage entirely.
-3. **Links.** Every file under `home/` is symlinked into `$HOME` at the same relative path. Existing files are backed up to `~/.dotfiles-backup/<timestamp>/` rather than overwritten.
-4. **oh-my-zsh.** If `~/.oh-my-zsh` doesn't exist, the official installer runs unattended (it keeps the linked `~/.zshrc` and doesn't change the shell). An existing git install is fast-forwarded instead.
-5. **antidote.** antidote is cloned (or updated) into `~/.antidote` and both plugin bundles are pre-built, so the first shell starts quickly and plugin problems surface during install.
-6. **Login shell.** The user's login shell is switched to zsh unless `--no-chsh` is passed.
+2. **Profile.** If `--profile` / `DOTFILES_PROFILE` didn't pick one, `detect_variant` in `lib/common.sh` decides: on Ubuntu, any installed desktop session package (`DETECT_DESKTOP_PACKAGES`) means `dev`, otherwise `server`. macOS has no such signal and stays on `server`. The choice is logged.
+3. **Packages.** It sources `lib/ubuntu.sh` or `lib/macos.sh` depending on the OS. Each defines `install_server_packages` and `install_dev_packages`. The dev profile then runs the shared steps from `lib/dev.sh`. Every step checks first and skips what's already installed. `--links-only` skips this stage entirely.
+4. **Links.** Every file under `home/` is symlinked into `$HOME` at the same relative path. Existing files are backed up to `~/.dotfiles-backup/<timestamp>/` rather than overwritten.
+5. **oh-my-zsh.** If `~/.oh-my-zsh` doesn't exist, the official installer runs unattended (it keeps the linked `~/.zshrc` and doesn't change the shell). An existing git install is fast-forwarded instead.
+6. **antidote.** antidote is cloned (or updated) into `~/.antidote` and both plugin bundles are pre-built, so the first shell starts quickly and plugin problems surface during install.
+7. **Login shell.** The user's login shell is switched to zsh unless `--no-chsh` is passed.
 
 ## How the shell loads
 

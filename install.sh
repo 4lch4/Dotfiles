@@ -21,6 +21,9 @@
 ##                                                                            ##
 ##   curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh \
 ##     | bash -s -- --profile dev                                             ##
+##                                                                            ##
+## No --profile is needed on a normal install: Ubuntu picks server or dev by  ##
+## whether a graphical session is installed. See resolve below.               ##
 ################################################################################
 
 set -euo pipefail
@@ -29,7 +32,9 @@ DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/4lch4/Dotfiles.git}"
 DOTFILES_BRANCH="${DOTFILES_BRANCH:-main}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
-PROFILE="${DOTFILES_PROFILE:-server}"
+# Left empty unless --profile or DOTFILES_PROFILE says otherwise, so the
+# profile can be picked from what this machine turns out to be.
+PROFILE="${DOTFILES_PROFILE:-}"
 LINKS_ONLY=false
 CHANGE_SHELL=true
 
@@ -40,7 +45,7 @@ usage() {
 Usage: install.sh [options]
 
 Options:
-  -p, --profile <name>  What to install (default: server, or $DOTFILES_PROFILE)
+  -p, --profile <name>  What to install (default: detected, see below)
                           server  zsh, oh-my-zsh, plugins and a few CLI tools
                                   (fzf, zoxide, eza, tmux, jq, ripgrep).
                           dev     everything in server, plus Node (nvm) with
@@ -50,9 +55,14 @@ Options:
       --no-chsh         Don't change the login shell to zsh.
   -h, --help            Show this help.
 
+With no --profile, Ubuntu installs the dev profile when a graphical session is
+installed and the server profile otherwise. macOS always uses server. Set
+DOTFILES_PROFILE, or pass --profile, to override the guess.
+
 Environment:
   DOTFILES_DIR     Where the repo lives/gets cloned (default: ~/.dotfiles)
   DOTFILES_BRANCH  Branch to clone when bootstrapping (default: main)
+  DOTFILES_PROFILE Profile to install when --profile isn't given
 EOF
 }
 
@@ -88,7 +98,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$PROFILE" in
-  server | dev) ;;
+  "" | server | dev) ;;
   *)
     echo "Unknown profile '$PROFILE' (expected 'server' or 'dev')" >&2
     exit 1
@@ -135,7 +145,6 @@ DOTFILES_DIR="$SCRIPT_DIR"
 source "$DOTFILES_DIR/lib/common.sh"
 
 OS="$(detect_os)"
-info "Installing dotfiles from $DOTFILES_DIR (os: $OS, profile: $PROFILE)"
 
 case "$OS" in
   ubuntu)
@@ -150,6 +159,26 @@ case "$OS" in
     die "Unsupported OS. Only Ubuntu and macOS are supported."
     ;;
 esac
+
+# Pick a profile when the caller didn't name one. On Ubuntu a graphical
+# session means someone works at this machine, so it gets the dev profile;
+# a bare box is a server. macOS keeps the old default of server, since
+# there's nothing to detect there and I'd rather not change that silently.
+if [[ -z "$PROFILE" ]]; then
+  if [[ "$OS" == ubuntu ]]; then
+    variant="$(detect_variant)"
+    if [[ "$variant" == desktop ]]; then
+      PROFILE=dev
+    else
+      PROFILE=server
+    fi
+    info "No --profile given; this looks like an Ubuntu $variant, using '$PROFILE'."
+  else
+    PROFILE=server
+  fi
+fi
+
+info "Installing dotfiles from $DOTFILES_DIR (os: $OS, profile: $PROFILE)"
 
 if [[ "$LINKS_ONLY" == false ]]; then
   install_server_packages
