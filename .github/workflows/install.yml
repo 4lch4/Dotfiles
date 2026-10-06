@@ -16,6 +16,74 @@ jobs:
       - name: Lint install scripts
         run: shellcheck -x install.sh lib/*.sh
 
+  hand-off:
+    name: POSIX hand-off
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: dotfiles
+
+      - name: Prepare container
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sudo git ca-certificates curl zsh >/dev/null
+          useradd --create-home --shell /bin/bash tester
+          echo 'tester ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tester
+          # Deliberately NOT copied to ~/.dotfiles yet: the piped cases need
+          # the clone branch to be reachable.
+          chmod -R a+rX "$GITHUB_WORKSPACE/dotfiles"
+
+      - name: /bin/sh is not bash
+        run: |
+          # Guard the premise of this PR: if Ubuntu's sh were bash, the
+          # hand-off would be untested.
+          [ "$(readlink -f /bin/sh)" != "$(readlink -f "$(command -v bash)")" ]
+          ! /bin/sh -c 'set -o pipefail' 2>/dev/null
+
+      - name: cat install.sh | sh (no path, must clone and hand off)
+        run: |
+          useradd --create-home --shell /bin/bash fresh
+          echo 'fresh ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/fresh
+          # Read the script from the workspace, not from a home directory:
+          # homes are 0700, so one user can't traverse into another's.
+          output="$(sudo -u fresh -H sh -c "cat '$GITHUB_WORKSPACE/dotfiles/install.sh' | sh -s -- --links-only" 2>&1)" || true
+          echo "$output"
+          grep -q "Cloning" <<<"$output"
+          grep -q "Installing dotfiles" <<<"$output"
+          # --links-only has to survive the hand-off.
+          ! grep -q "apt install" <<<"$output"
+
+      - name: curl | bash still works
+        run: |
+          useradd --create-home --shell /bin/bash piped
+          echo 'piped ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/piped
+          output="$(sudo -u piped -H bash -c "cat '$GITHUB_WORKSPACE/dotfiles/install.sh' | bash -s -- --links-only" 2>&1)" || true
+          echo "$output"
+          grep -q "Cloning" <<<"$output"
+          grep -q "Installing dotfiles" <<<"$output"
+
+      - name: set up a plain copy for the in-checkout cases
+        run: |
+          cp -r "$GITHUB_WORKSPACE/dotfiles" /home/tester/.dotfiles
+          chown -R tester:tester /home/tester/.dotfiles
+
+      - name: sh install.sh (a path, so no clone)
+        run: |
+          output="$(sudo -u tester -H sh -c 'sh ~/.dotfiles/install.sh --links-only' 2>&1)" || true
+          echo "$output"
+          grep -q "Installing dotfiles" <<<"$output"
+          ! grep -q "Illegal option" <<<"$output"
+
+      - name: arguments reach bash
+        run: |
+          # `|| true` because the step runs under `bash -e` and a rejected
+          # profile is expected to exit non-zero.
+          output="$(sudo -u tester -H sh -c 'sh ~/.dotfiles/install.sh --profile bogus' 2>&1)" || true
+          echo "$output"
+          grep -q "Unknown profile 'bogus'" <<<"$output"
+
   install:
     name: ${{ matrix.image }} / ${{ matrix.profile }}
     runs-on: ubuntu-latest
