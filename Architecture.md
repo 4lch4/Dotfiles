@@ -25,7 +25,7 @@ A quick tour of how this repo is put together.
 
 ## How `install.sh` runs
 
-1. **Bootstrap.** If the script isn't running from inside a clone (e.g. it was piped from `curl`), it installs git if needed, clones the repo to `$DOTFILES_DIR` (or fast-forwards an existing clone), and re-executes itself from there with the same arguments.
+1. **Hand-off.** The top of `install.sh` is POSIX sh, the rest is bash. It resolves the repo directory — this checkout if it's being run from one, otherwise git is installed if needed and the repo is cloned or fast-forwarded in `$DOTFILES_DIR`. Under anything that isn't bash it then `exec`s bash against that directory, passing `"$@"` along. Under bash it falls straight through. This is why `curl … | sh` and `curl … | bash` both work; it deliberately does not stage a copy of itself, since a shell has already buffered a piped script's body by the time any of it runs.
 2. **Packages.** It sources `lib/ubuntu.sh` or `lib/macos.sh` depending on the OS. Each defines `install_server_packages` and `install_dev_packages`. The dev profile then runs the shared steps from `lib/dev.sh`. Every step checks first and skips what's already installed. `--links-only` skips this stage entirely.
 3. **Links.** Every file under `home/` is symlinked into `$HOME` at the same relative path. Existing files are backed up to `~/.dotfiles-backup/<timestamp>/` rather than overwritten.
 4. **oh-my-zsh.** If `~/.oh-my-zsh` doesn't exist, the official installer runs unattended (it keeps the linked `~/.zshrc` and doesn't change the shell). An existing git install is fast-forwarded instead.

@@ -8,11 +8,13 @@ One command, on a fresh machine or an existing one. Run it as your normal user (
 
 ```bash
 # Server: zsh, oh-my-zsh, plugins and a handful of CLI tools.
-curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | sh
 
 # Dev machine: everything above plus the development toolchain.
-curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | bash -s -- --profile dev
+curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh | sh -s -- --profile dev
 ```
+
+`sh` and `bash` both work; the script hands off to bash itself before it needs anything bash-only.
 
 The script clones this repo to `~/.dotfiles` and re-runs itself from there. If you already have a clone, run it directly instead:
 

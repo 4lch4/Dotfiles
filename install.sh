@@ -20,20 +20,80 @@
 ##   ./install.sh [--profile server|dev] [--links-only] [--no-chsh]           ##
 ##                                                                            ##
 ##   curl -fsSL https://raw.githubusercontent.com/4lch4/Dotfiles/main/install.sh \
-##     | bash -s -- --profile dev                                             ##
+##     | sh -s -- --profile dev                                              ##
+##                                                                            ##
+## Plain `sh` works as well as `bash`; see the hand-off below.                 ##
 ################################################################################
 
-set -euo pipefail
+#region Hand-off
+# The first section of this file is POSIX sh. Everything after it is bash,
+# which rules out `sh` on Debian/Ubuntu (dash has no arrays, [[ ]] or
+# pipefail) and a `curl … | sh` pipeline ignores this file's shebang
+# entirely. So under anything that isn't bash, get the repo onto disk and
+# `exec` bash against the clone.
+#
+# Note this deliberately does NOT stage a copy of itself to run under bash:
+# a script cannot reliably read its own piped stdin, because the shell has
+# already buffered the body by the time any of it runs. Handing off to the
+# clone sidesteps that entirely -- and the clone is what the script wanted
+# anyway when it was piped in.
+set -eu
 
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/4lch4/Dotfiles.git}"
 DOTFILES_BRANCH="${DOTFILES_BRANCH:-main}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
+# Running from a checkout? Then use it as-is and skip the clone, which is
+# what makes testing a branch locally work. `$0` is only a path when the
+# script was named on the command line; piped in, it's just the shell's name.
+__dotfiles_dir=""
+if [ -f "${0:-}" ]; then
+  __dotfiles_dir="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
+fi
+
+if [ -n "$__dotfiles_dir" ] && [ -f "$__dotfiles_dir/lib/common.sh" ]; then
+  DOTFILES_DIR="$__dotfiles_dir"
+else
+  if ! command -v git >/dev/null 2>&1; then
+    printf '%s\n' "==> git is required, installing it..." >&2
+    if command -v apt-get >/dev/null 2>&1; then
+      __dotfiles_sudo=""
+      [ "$(id -u)" -ne 0 ] && __dotfiles_sudo="sudo"
+      $__dotfiles_sudo apt-get update -qq
+      $__dotfiles_sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git ca-certificates
+    else
+      printf '%s\n' "Please install git and re-run this script." >&2
+      exit 1
+    fi
+  fi
+
+  if [ -d "$DOTFILES_DIR/.git" ]; then
+    printf '%s\n' "==> Updating existing clone in $DOTFILES_DIR" >&2
+    git -C "$DOTFILES_DIR" pull --ff-only
+  else
+    printf '%s\n' "==> Cloning $DOTFILES_REPO into $DOTFILES_DIR" >&2
+    git clone --branch "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_DIR"
+  fi
+fi
+
+# Under bash (including `curl … | bash` and `./install.sh`) there is nothing
+# to hand off to, so fall through to the section below with the repo located.
+if [ -z "${BASH_VERSION:-}" ]; then
+  if ! command -v bash >/dev/null 2>&1; then
+    printf '%s\n' "install.sh needs bash. On Debian/Ubuntu: apt-get install -y bash" >&2
+    exit 1
+  fi
+  export DOTFILES_REPO DOTFILES_BRANCH DOTFILES_DIR
+  exec bash "$DOTFILES_DIR/install.sh" "$@"
+fi
+#endregion Hand-off
+
+set -euo pipefail
+
 PROFILE="${DOTFILES_PROFILE:-server}"
 LINKS_ONLY=false
 CHANGE_SHELL=true
 
-ORIGINAL_ARGS=("$@")
 
 usage() {
   cat <<'EOF'
@@ -95,41 +155,8 @@ case "$PROFILE" in
     ;;
 esac
 
-#region Bootstrap
-# When piped from curl there's no repo on disk, so clone it and re-run from
-# there. `${BASH_SOURCE[0]:-}` is empty when the script is read from stdin.
-SCRIPT_DIR=""
-if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
-
-if [[ -z "$SCRIPT_DIR" || ! -f "$SCRIPT_DIR/lib/common.sh" ]]; then
-  if ! command -v git >/dev/null 2>&1; then
-    echo "==> git is required, installing it..."
-    if command -v apt-get >/dev/null 2>&1; then
-      SUDO=""
-      [[ $EUID -ne 0 ]] && SUDO="sudo"
-      $SUDO apt-get update -qq
-      $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git ca-certificates
-    else
-      echo "Please install git and re-run this script." >&2
-      exit 1
-    fi
-  fi
-
-  if [[ -d "$DOTFILES_DIR/.git" ]]; then
-    echo "==> Updating existing clone in $DOTFILES_DIR"
-    git -C "$DOTFILES_DIR" pull --ff-only
-  else
-    echo "==> Cloning $DOTFILES_REPO into $DOTFILES_DIR"
-    git clone --branch "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_DIR"
-  fi
-
-  exec bash "$DOTFILES_DIR/install.sh" "${ORIGINAL_ARGS[@]+"${ORIGINAL_ARGS[@]}"}"
-fi
-
-DOTFILES_DIR="$SCRIPT_DIR"
-#endregion Bootstrap
+# The hand-off section above has already put us in a checkout by the time we
+# get here: either this file is in one, or the repo was cloned or pulled.
 
 # shellcheck source=lib/common.sh
 source "$DOTFILES_DIR/lib/common.sh"
