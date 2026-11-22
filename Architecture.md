@@ -34,7 +34,7 @@ A quick tour of how this repo is put together.
 
 ## How the shell loads
 
-`~/.zshrc` loads things in this order: environment variables and PATH (`NVM_DIR`, `~/.local/bin`) → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → antidote `.zsh_plugins.post.txt`.
+`~/.zshrc` loads things in this order: environment variables and PATH (`NVM_DIR`, `BUN_INSTALL`, `~/.local/bin`, `~/.bun/bin`) → oh-my-zsh settings (`ZSH`, theme, `plugins=(...)`) → antidote `.zsh_plugins.txt` → `oh-my-zsh.sh` (runs compinit) → fzf/zoxide integrations → `functions.zsh` → `aliases.zsh` → `~/.config/zsh/local.zsh` (untracked, optional) → antidote `.zsh_plugins.post.txt`.
 
 zsh-completions has to be on `fpath` before oh-my-zsh runs compinit, and zsh-syntax-highlighting has to come after everything that defines widgets, which is why antidote loads in two parts around oh-my-zsh.
 
