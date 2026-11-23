@@ -58,7 +58,7 @@ install_bun() {
   # which we drop. .zshrc already sets BUN_INSTALL and PATH. Its output
   # (mostly a download progress bar) is only shown if it fails.
   local output
-  if ! output="$(curl -fsSL https://bun.sh/install | SHELL=sh bash 2>&1)"; then
+  if ! output="$(curl -fsSL https://bun.sh/install | SHELL="sh" bash 2>&1)"; then
     echo "$output" >&2
     die "Bun install failed."
   fi
