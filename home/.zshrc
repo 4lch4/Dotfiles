@@ -15,12 +15,16 @@ DEVELOPMENT_DIR="$HOME/Development"
 
 # Loaded by the oh-my-zsh nvm plugin.
 export NVM_DIR="$HOME/.nvm"
+
+# install.sh installs Bun here on the dev profile.
+export BUN_INSTALL="$HOME/.bun"
 #endregion Directory Variables
 
 #region PATH
 # install.sh puts Task in ~/.local/bin on Ubuntu.
 typeset -U path
 [[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
+[[ -d "$BUN_INSTALL/bin" ]] && path=("$BUN_INSTALL/bin" $path)
 #endregion PATH
 
 #region oh-my-zsh settings (must be set before oh-my-zsh.sh is sourced)
@@ -30,6 +34,7 @@ HIST_STAMPS="yyyy-mm-dd"
 
 # Most of these only add aliases/completions when the tool is installed.
 plugins=(
+  bun
   colorize
   command-not-found
   common-aliases

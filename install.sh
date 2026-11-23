@@ -158,6 +158,7 @@ if [[ "$LINKS_ONLY" == false ]]; then
     install_dev_packages
     # Shared between Ubuntu and macOS, defined in lib/dev.sh.
     install_node
+    install_bun
   fi
 fi
 
