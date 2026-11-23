@@ -15,6 +15,9 @@ BREW_SERVER_PACKAGES=(
   tmux
   jq
   ripgrep
+  # The open-source CLI and daemon. Start it with
+  # `sudo brew services start tailscale`, then run `tailscale up`.
+  tailscale
 )
 
 # Added on top of the server list for the dev profile.
