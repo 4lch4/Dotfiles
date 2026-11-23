@@ -71,6 +71,9 @@ jobs:
             omz version
             [ "$ZSH_THEME" = steeef ]'
 
+      - name: Tailscale is installed
+        run: sudo -u tester -H bash -c 'tailscale version'
+
       - name: Dev tools are on PATH
         if: matrix.profile == 'dev'
         run: |

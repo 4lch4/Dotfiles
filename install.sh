@@ -42,7 +42,8 @@ Usage: install.sh [options]
 Options:
   -p, --profile <name>  What to install (default: server, or $DOTFILES_PROFILE)
                           server  zsh, oh-my-zsh, plugins and a few CLI tools
-                                  (fzf, zoxide, eza, tmux, jq, ripgrep).
+                                  (fzf, zoxide, eza, tmux, jq, ripgrep) and
+                                  Tailscale (installed, not logged in).
                           dev     everything in server, plus Node (nvm) with
                                   global npm packages, Task and gh.
       --links-only      Only (re)link the config files and set up oh-my-zsh

@@ -79,10 +79,31 @@ install_eza() {
   rm -rf "$tmp"
 }
 
+# Tailscale from its own apt repo, so it stays current. This only installs
+# it: joining the tailnet (`sudo tailscale up`) needs a login or an auth key,
+# so that step is left to the user.
+install_tailscale() {
+  has tailscale && return 0
+
+  local codename
+  # shellcheck source=/dev/null
+  codename="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+
+  info "Installing Tailscale"
+  curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${codename}.noarmor.gpg" |
+    $SUDO tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+  curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/${codename}.tailscale-keyring.list" |
+    $SUDO tee /etc/apt/sources.list.d/tailscale.list >/dev/null
+
+  APT_UPDATED=false
+  apt_install tailscale
+}
+
 install_server_packages() {
   info "Installing server packages"
   apt_install "${APT_SERVER_PACKAGES[@]}"
   install_eza
+  install_tailscale
 }
 
 #region Dev
