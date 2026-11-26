@@ -49,6 +49,40 @@ detect_arch() {
   esac
 }
 
+# Software that only exists on a machine someone logs into graphically. Any
+# one of them being installed means this is a desktop, which is what separates
+# a dev box from a server. Metapackages like ubuntu-desktop-minimal drag in the
+# session manager, so an ordinary desktop install trips one of these.
+#
+# Kept to unambiguous desktop software on purpose: tiling window managers and
+# the like are left out because a headless box can just as easily run those.
+DETECT_DESKTOP_PACKAGES=(
+  ubuntu-desktop
+  ubuntu-desktop-minimal
+  gnome-shell
+  gnome-session
+  plasma-desktop
+  kde-plasma-desktop
+  xfce4-session
+  cinnamon
+  mate-desktop-environment
+  lxde
+  lxqt
+)
+
+# Echoes `desktop` or `server`. dpkg-query is the same "is it installed" test
+# apt_install uses, so this agrees with what the package steps will do.
+detect_variant() {
+  local pkg
+  for pkg in "${DETECT_DESKTOP_PACKAGES[@]}"; do
+    if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
+      echo desktop
+      return 0
+    fi
+  done
+  echo server
+}
+
 #region Linking
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 

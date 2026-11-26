@@ -16,6 +16,63 @@ jobs:
       - name: Lint install scripts
         run: shellcheck -x install.sh lib/*.sh
 
+  detect:
+    name: Profile detection
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: dotfiles
+
+      - name: Prepare container
+        run: |
+          apt-get update -qq
+          # zsh is needed because these steps use --links-only, which skips the
+          # package stage that would otherwise install it.
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sudo git ca-certificates curl zsh >/dev/null
+          useradd --create-home --shell /bin/bash tester
+          echo 'tester ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tester
+
+      - name: A bare box resolves to server
+        run: |
+          cp -r dotfiles /home/tester/.dotfiles
+          chown -R tester:tester /home/tester/.dotfiles
+          output="$(sudo -u tester -H bash -c 'cd ~ && ~/.dotfiles/install.sh --links-only' 2>&1)"
+          echo "$output"
+          grep -q "looks like an Ubuntu server, using 'server'" <<<"$output"
+          grep -q "profile: server" <<<"$output"
+
+      - name: A desktop resolves to dev
+        run: |
+          # A real desktop session package, so the check uses real dpkg state
+          # rather than a stubbed dpkg-query.
+          apt-get install -y -qq --no-install-recommends xfce4-session >/dev/null
+          output="$(sudo -u tester -H bash -c 'cd ~ && ~/.dotfiles/install.sh --links-only' 2>&1)"
+          echo "$output"
+          grep -q "looks like an Ubuntu desktop, using 'dev'" <<<"$output"
+          grep -q "profile: dev" <<<"$output"
+
+      - name: An explicit --profile overrides the guess
+        run: |
+          output="$(sudo -u tester -H bash -c 'cd ~ && ~/.dotfiles/install.sh --links-only --profile server' 2>&1)"
+          echo "$output"
+          ! grep -q "No --profile given" <<<"$output"
+          grep -q "profile: server" <<<"$output"
+
+      - name: DOTFILES_PROFILE overrides the guess too
+        run: |
+          output="$(sudo -u tester -H bash -c 'cd ~ && DOTFILES_PROFILE=server ~/.dotfiles/install.sh --links-only' 2>&1)"
+          echo "$output"
+          grep -q "profile: server" <<<"$output"
+
+      - name: A bad profile is still rejected
+        run: |
+          if sudo -u tester -H bash -c 'cd ~ && ~/.dotfiles/install.sh --profile bogus' 2>&1; then
+            echo "::error::a bad --profile was accepted"
+            exit 1
+          fi
+
   install:
     name: ${{ matrix.image }} / ${{ matrix.profile }}
     runs-on: ubuntu-latest
