@@ -130,10 +130,39 @@ install_task() {
   sh -c "$(curl -fsSL https://taskfile.dev/install.sh)" -- -b "$HOME/.local/bin" >/dev/null
 }
 
+# doctl is the DigitalOcean CLI. Ubuntu's archive doesn't carry it, so install
+# the release binary and verify it against the release's published checksum.
+install_doctl() {
+  has doctl && return 0
+
+  local version arch asset tmp base
+  version="$(curl -fsSL https://api.github.com/repos/digitalocean/doctl/releases/latest |
+    sed -nE 's/.*"tag_name": *"v?([^"]+)".*/\1/p' | head -n1)"
+  [[ -n "$version" ]] || die "Couldn't find the latest doctl release."
+
+  arch="$(detect_arch)"
+  asset="doctl-${version}-linux-${arch}.tar.gz"
+  base="https://github.com/digitalocean/doctl/releases/download/v${version}"
+
+  info "Installing doctl $version"
+  tmp="$(mktemp -d)"
+  curl -fsSL -o "$tmp/$asset" "$base/$asset"
+  curl -fsSL -o "$tmp/doctl-checksums.sha256" "$base/doctl-${version}-checksums.sha256"
+
+  # Check only this archive's line; a missing entry fails instead of passing.
+  (cd "$tmp" && grep " ${asset}$" doctl-checksums.sha256 |
+    sha256sum --check --strict) || die "doctl checksum verification failed."
+
+  tar -xzf "$tmp/$asset" -C "$tmp"
+  $SUDO install -m 0755 "$tmp/doctl" /usr/local/bin/doctl
+  rm -rf "$tmp"
+}
+
 install_dev_packages() {
   info "Installing dev packages"
   apt_install "${APT_DEV_PACKAGES[@]}"
   install_gh
   install_task
+  install_doctl
 }
 #endregion Dev
