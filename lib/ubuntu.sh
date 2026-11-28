@@ -131,14 +131,19 @@ install_task() {
 }
 
 # doctl is the DigitalOcean CLI. Ubuntu's archive doesn't carry it, so install
-# the release binary and verify it against the release's published checksum.
+# the release binary to ~/.local/bin (no sudo, like Task) and verify it against
+# the release's published checksums. This only installs it: auth is left to
+# the user (`doctl auth init`).
 install_doctl() {
-  has doctl && return 0
+  local bin="$HOME/.local/bin/doctl"
+  { has doctl || [[ -x "$bin" ]]; } && return 0
 
-  local version arch asset tmp base
-  version="$(curl -fsSL https://api.github.com/repos/digitalocean/doctl/releases/latest |
-    sed -nE 's/.*"tag_name": *"v?([^"]+)".*/\1/p' | head -n1)"
-  [[ -n "$version" ]] || die "Couldn't find the latest doctl release."
+  # The latest-release page redirects to .../tag/v<version>. Unlike the GitHub
+  # API, this isn't rate-limited for anonymous requests.
+  local url version arch asset tmp base
+  url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/digitalocean/doctl/releases/latest)"
+  version="${url##*/tag/v}"
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Couldn't find the latest doctl release (got: $url)."
 
   arch="$(detect_arch)"
   asset="doctl-${version}-linux-${arch}.tar.gz"
@@ -147,14 +152,15 @@ install_doctl() {
   info "Installing doctl $version"
   tmp="$(mktemp -d)"
   curl -fsSL -o "$tmp/$asset" "$base/$asset"
-  curl -fsSL -o "$tmp/doctl-checksums.sha256" "$base/doctl-${version}-checksums.sha256"
+  curl -fsSL -o "$tmp/checksums.sha256" "$base/doctl-${version}-checksums.sha256"
 
   # Check only this archive's line; a missing entry fails instead of passing.
-  (cd "$tmp" && grep " ${asset}$" doctl-checksums.sha256 |
-    sha256sum --check --strict) || die "doctl checksum verification failed."
+  (cd "$tmp" && grep " ${asset}$" checksums.sha256 | sha256sum --check --strict --quiet) ||
+    { rm -rf "$tmp"; die "doctl checksum verification failed."; }
 
-  tar -xzf "$tmp/$asset" -C "$tmp"
-  $SUDO install -m 0755 "$tmp/doctl" /usr/local/bin/doctl
+  tar -xzf "$tmp/$asset" -C "$tmp" doctl
+  mkdir -p "$HOME/.local/bin"
+  install -m 0755 "$tmp/doctl" "$bin"
   rm -rf "$tmp"
 }
 

@@ -45,7 +45,7 @@ Options:
                                   (fzf, zoxide, eza, tmux, jq, ripgrep) and
                                   Tailscale (installed, not logged in).
                           dev     everything in server, plus Node (nvm) with
-                                  global npm packages, Task and gh.
+                                  global npm packages, Task, gh and doctl.
       --links-only      Only (re)link the config files and set up oh-my-zsh
                         and antidote; don't install any packages.
       --no-chsh         Don't change the login shell to zsh.
