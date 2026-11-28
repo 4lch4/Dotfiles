@@ -130,10 +130,45 @@ install_task() {
   sh -c "$(curl -fsSL https://taskfile.dev/install.sh)" -- -b "$HOME/.local/bin" >/dev/null
 }
 
+# doctl is the DigitalOcean CLI. Ubuntu's archive doesn't carry it, so install
+# the release binary to ~/.local/bin (no sudo, like Task) and verify it against
+# the release's published checksums. This only installs it: auth is left to
+# the user (`doctl auth init`).
+install_doctl() {
+  local bin="$HOME/.local/bin/doctl"
+  { has doctl || [[ -x "$bin" ]]; } && return 0
+
+  # The latest-release page redirects to .../tag/v<version>. Unlike the GitHub
+  # API, this isn't rate-limited for anonymous requests.
+  local url version arch asset tmp base
+  url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/digitalocean/doctl/releases/latest)"
+  version="${url##*/tag/v}"
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Couldn't find the latest doctl release (got: $url)."
+
+  arch="$(detect_arch)"
+  asset="doctl-${version}-linux-${arch}.tar.gz"
+  base="https://github.com/digitalocean/doctl/releases/download/v${version}"
+
+  info "Installing doctl $version"
+  tmp="$(mktemp -d)"
+  curl -fsSL -o "$tmp/$asset" "$base/$asset"
+  curl -fsSL -o "$tmp/checksums.sha256" "$base/doctl-${version}-checksums.sha256"
+
+  # Check only this archive's line; a missing entry fails instead of passing.
+  (cd "$tmp" && grep " ${asset}$" checksums.sha256 | sha256sum --check --strict --quiet) ||
+    { rm -rf "$tmp"; die "doctl checksum verification failed."; }
+
+  tar -xzf "$tmp/$asset" -C "$tmp" doctl
+  mkdir -p "$HOME/.local/bin"
+  install -m 0755 "$tmp/doctl" "$bin"
+  rm -rf "$tmp"
+}
+
 install_dev_packages() {
   info "Installing dev packages"
   apt_install "${APT_DEV_PACKAGES[@]}"
   install_gh
   install_task
+  install_doctl
 }
 #endregion Dev

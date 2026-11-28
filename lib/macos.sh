@@ -22,6 +22,7 @@ BREW_SERVER_PACKAGES=(
 
 # Added on top of the server list for the dev profile.
 BREW_DEV_PACKAGES=(
+  doctl
   gh
   go-task
 )
